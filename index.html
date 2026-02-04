@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Samrat Chat API</title>
+</head>
+<body>
+<script>
+function g(p){return new URLSearchParams(location.search).get(p);}
+
+var q = (g("q") || "").toLowerCase().trim();
+var last = (g("last") || "").toLowerCase().trim();
+
+var mood = "normal";
+var intent = "chat";
+var reply = "";
+
+// ---------- MOOD ----------
+if (/(sad|dukhi|tension|problem|pareshan)/.test(q)) mood = "sad";
+else if (/(gussa|angry|irritate)/.test(q)) mood = "angry";
+else if (/(happy|khush|mast|mazza)/.test(q)) mood = "happy";
+
+// ---------- ABUSE FILTER (samrat shaant rehta hai) ----------
+if (/(bc|mc|chutiya|pagal|bakwas)/.test(q)) {
+  reply = "Thoda shaant 😌 baat theek se karo, main madad ke liye hoon.";
+}
+
+// ---------- INTENT ----------
+else if (/[0-9]+\s*[\+\-\*\/]\s*[0-9]+/.test(q)) intent = "math";
+else if (/(time|samay|kitna baj)/.test(q)) intent = "time";
+else if (/(date|aaj kya date)/.test(q)) intent = "date";
+else if (/(help|madad|kaise|kya|meaning)/.test(q)) intent = "help";
+else if (/(sketchware|android|api|app)/.test(q)) intent = "tech";
+
+// ---------- MATH ----------
+if (intent === "math") {
+  try {
+    var exp = q.match(/[0-9+\-*/(). ]+/)[0];
+    reply = "🧮 Hisaab lagaya: " + eval(exp);
+  } catch(e) {
+    reply = "Math samjha, par likhne me thoda gadbad hai 😅";
+  }
+}
+
+// ---------- TIME / DATE ----------
+else if (intent === "time") {
+  reply = "⏰ Abhi time hai: " + new Date().toLocaleTimeString();
+}
+else if (intent === "date") {
+  reply = "📅 Aaj ki date: " + new Date().toDateString();
+}
+
+// ---------- TECH ----------
+else if (intent === "tech") {
+  if (q.includes("sketchware")) {
+    reply = "Sketchware beginners ke liye sahi hai 👍 logic clear ho to sab possible hai.";
+  } else if (q.includes("api")) {
+    reply = "API matlab app aur server ke beech baat-cheet ka rasta 🔌";
+  } else if (q.includes("android")) {
+    reply = "Android dev long-term game hai 📱 consistency rakho.";
+  }
+}
+
+// ---------- NORMAL CHAT ----------
+else if (q.includes("hello") || q.includes("hi")) {
+  reply = "👋 Bol bhai, kya scene hai?";
+}
+else if (q.includes("kaise ho")) {
+  reply = "Main theek hoon 😄 tum batao?";
+}
+else {
+  // SAMRAT BRAIN (fallback)
+  if (mood === "sad") {
+    reply = "Lagta hai mann heavy hai 😔 bolo kya hua, sun raha hoon.";
+  }
+  else if (mood === "angry") {
+    reply = "Gussa thoda side me rakho 😤 phir baat clear hogi.";
+  }
+  else if (last !== "") {
+    reply = "Tum pehle `" + last + "` bol rahe the 🤔 usi ko continue karo.";
+  }
+  else {
+    reply = "Samajhne ki koshish kar raha hoon 🤖 thoda clear likho.";
+  }
+}
+
+var response = {
+  status: "success",
+  mood: mood,
+  intent: intent,
+  reply: reply
+};
+
+document.body.innerText = JSON.stringify(response);
+</script>
+</body>
+</html>
