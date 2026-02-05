@@ -1,28 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>No Key AI</title>
-<script src="https://unpkg.com/@mlc-ai/web-llm/dist/index.js"></script>
-</head>
-<body>
-<script>
-(async () => {
-  const q = new URLSearchParams(location.search).get("q") || "hello";
-
-  const engine = new webllm.MLCEngine();
-  await engine.reload("Llama-3-8B-Instruct-q4f32_1");
-
-  const result = await engine.chat.completions.create({
-    messages: [{ role: "user", content: q }],
-  });
-
-  document.body.innerText = JSON.stringify({
-    status: "success",
-    model: "LLaMA-3",
-    reply: result.choices[0].message.content
-  });
-})();
-</script>
-</body>
-</html>
+{
+"n":"new",
+"title":"hello",
+"msg":"welcome"
+}
