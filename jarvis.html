@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jarvis - Voice Assistant (No API Key)</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: radial-gradient(circle at 50% 20%, #0a001f, #000814);
+      color: #e0e0ff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+    .arc-reactor {
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 30px;
+      background: radial-gradient(circle at 30% 30%, #00f0ff33, #0000ff11, transparent 70%);
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 
+        0 0 60px #00d4ff88,
+        inset 0 0 40px #00aaff55;
+      animation: pulse 4s infinite ease-in-out;
+    }
+    .arc-reactor::before {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #ffffff22, transparent);
+      box-shadow: inset 0 0 30px #00f0ff;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 60px #00d4ff88, 0 0 120px #00d4ff33; }
+      50%     { box-shadow: 0 0 90px #00f0ff,   0 0 180px #00d4ff66; }
+    }
+    h1 {
+      font-size: 3.8rem;
+      margin: 0.2em 0 0.1em;
+      background: linear-gradient(90deg, #00f0ff, #a78bfa, #ff71ce);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 20px #00f0ff44;
+    }
+    .status {
+      font-size: 1.3rem;
+      margin: 1.5rem 0 2rem;
+      min-height: 1.8em;
+      opacity: 0.9;
+    }
+    .buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 14px 32px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-weight: 600;
+    }
+    #startBtn {
+      background: linear-gradient(145deg, #00d4ff, #0095cc);
+      color: white;
+      box-shadow: 0 6px 20px #00aaff66;
+    }
+    #startBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px #00d4ff88; }
+    
+    #stopBtn {
+      background: linear-gradient(145deg, #ff4d6d, #d0006e);
+      color: white;
+      box-shadow: 0 6px 20px #ff4d6d66;
+    }
+    #stopBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px #ff4d6d88; }
+
+    .listening {
+      animation: listening 1.5s infinite;
+    }
+    @keyframes listening {
+      0%,100% { opacity: 0.6; }
+      50%     { opacity: 1;   }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="arc-reactor"></div>
+  <h1>Jarvis</h1>
+  <div class="status" id="status">Say "Jarvis" to wake me up...</div>
+
+  <div class="buttons">
+    <button id="startBtn">Start Listening 🎤</button>
+    <button id="stopBtn">Stop Listening 🛑</button>
+  </div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────
+const status = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+const stopBtn  = document.getElementById("stopBtn");
+
+let recognition;
+let isListening = false;
+
+// Check browser support
+if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+  status.textContent = "Sorry, your browser doesn't support Speech Recognition 😔";
+  startBtn.disabled = true;
+} else {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.lang = "en-US";   // ← change to your language if needed
+
+  // ─── Visual feedback ───────────────────────────────
+  function setStatus(text, listening = false) {
+    status.textContent = text;
+    status.classList.toggle("listening", listening);
+  }
+
+  // ─── Very simple command parser ────────────────────
+  function handleCommand(text) {
+    text = text.toLowerCase().trim();
+    console.log("Heard:", text);
+
+    if (text.includes("hello") || text.includes("hi jarvis")) {
+      speak("Hello sir. How can I help you today?");
+    }
+    else if (text.includes("time") || text.includes("what time")) {
+      const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      speak(`The time is ${now}`);
+    }
+    else if (text.includes("date") || text.includes("what is the date")) {
+      const today = new Date().toLocaleDateString();
+      speak(`Today is ${today}`);
+    }
+    else if (text.includes("joke")) {
+      speak("Why don't programmers prefer dark mode? Because the light attracts bugs.");
+    }
+    else if (text.includes("thank")) {
+      speak("You're welcome, sir.");
+    }
+    else if (text.includes("shutdown") || text.includes("sleep") || text.includes("bye")) {
+      speak("Goodbye sir. Shutting down.");
+      setTimeout(() => setStatus("Offline"), 1800);
+      stopListening();
+    }
+    else {
+      speak(`You said: ${text}`);
+    }
+  }
+
+  // ─── Text → Speech ─────────────────────────────────
+  function speak(msg) {
+    const utterance = new SpeechSynthesisUtterance(msg);
+    utterance.rate = 1.05;
+    utterance.pitch = 0.9;
+    utterance.volume = 0.95;
+    speechSynthesis.speak(utterance);
+  }
+
+  // ─── Recognition events ────────────────────────────
+  recognition.onresult = (event) => {
+    const transcript = event.results[event.results.length-1][0].transcript;
+    handleCommand(transcript);
+  };
+
+  recognition.onend = () => {
+    if (isListening) {
+      // auto-restart (continuous listening mode)
+      recognition.start();
+    } else {
+      setStatus("Stopped. Click Start to wake me again.");
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.error(event.error);
+    if (event.error === "no-speech") return;
+    setStatus("Error: " + event.error, false);
+    stopListening();
+  };
+
+  // ─── Buttons ───────────────────────────────────────
+  startBtn.onclick = () => {
+    if (isListening) return;
+    try {
+      recognition.start();
+      isListening = true;
+      setStatus("Listening... say anything (try: time, joke, hello)", true);
+      startBtn.textContent = "Listening...";
+      startBtn.style.background = "linear-gradient(145deg, #00ff9d, #00c97e)";
+    } catch(e) {
+      setStatus("Cannot start: " + e.message);
+    }
+  };
+
+  stopBtn.onclick = stopListening;
+
+  function stopListening() {
+    if (!isListening) return;
+    recognition.stop();
+    isListening = false;
+    setStatus("Stopped. Say 'Jarvis' again when you need me.");
+    startBtn.textContent = "Start Listening 🎤";
+    startBtn.style.background = "";
+  }
+
+  // Welcome message
+  setTimeout(() => {
+    speak("Jarvis online. How may I assist you, sir?");
+  }, 800);
+}
+
+</script>
+</body>
+</html>
